@@ -1,0 +1,74 @@
+/*Find out the top 4 or top 10 product being sold in the monthly basis and in all the 4 months.. Criteria for top should be sales amount.
+*/
+
+databag= load '/home/hduser/Downloads/data files/4 month data/'
+		using PigStorage(';')
+		AS			     (date:chararray,custid:chararray,age:chararray,area:chararray,
+prodsubclass:chararray,prodid:chararray ,qty:double,totalcost:double,
+totalsales:double);
+
+
+--1) top 4 yearly basis
+
+bagfortop4= foreach databag GENERATE date,prodid,totalsales;
+
+group4prod= GROUP bagfortop4 by prodid;
+
+sumprodtop4= foreach group4prod GENERATE $0,SUM(bagfortop4.totalsales) as salesamt;
+
+orderbymax= limit (order sumprodtop4 by salesamt desc) 4;
+--dump orderbymax;
+
+/*
+-------output--------
+(8712045008539,1540503.0)
+(4710628131012,675112.0)
+(4710114128038,514601.0)
+(4711588210441,491292.0)*/
+
+
+---2)top 4 for each month
+
+bagfortop4= foreach databag GENERATE date,prodid,totalsales;
+
+monthfortop4= foreach bagfortop4 GENERATE SUBSTRING($0,5,7) as month,prodid,totalsales;
+
+group4month= GROUP monthfortop4 by (month,prodid);
+
+sumprod4= foreach group4month GENERATE group, SUM(monthfortop4.totalsales) as prodamt;
+
+ordersum= ORDER sumprod4 by prodamt desc;
+
+topsalesamt= limit ordersum desc;
+
+--groupnew= GROUP sumprod4 by group.$0;
+
+
+top4= foreach groupnew {
+sorted = order sumprod4 by prodamt desc;
+top = limit sorted 4;
+generate flatten(top);
+};
+
+
+--dump top4;
+
+/*((01,8712045008539),611874.0)
+((01,4710628119010),278230.0)
+((01,4710628131012),227840.0)
+((01,4719090900065),225456.0)
+((02,4711588210441),444000.0)
+((02,0022972004664),213803.0)
+((02,4710036003581),210339.0)
+((02,4710265849066),194669.0)
+((11,20553418     ),470501.0)
+((11,8712045008539),460282.0)
+((11,4902430493437),271542.0)
+((11,4710628131012),188149.0)
+((12,8712045008539),442482.0)
+((12,8712045000151),298013.0)
+((12,8712045011317),252688.0)
+((12,7610053910787),233383.0)*/
+
+
+

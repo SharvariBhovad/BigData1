@@ -1,0 +1,38 @@
+/*Find total gross profit % made by each product and also by each category for all the 4 months data.
+
+*/
+
+databag= load '/home/hduser/Downloads/data files/4 month data/'
+		using PigStorage(';')
+		AS			     (date:chararray,custid:chararray,age:chararray,area:chararray,
+prodsubclass:chararray,prodid:chararray ,qty:double,totalcost:double,
+totalsales:double);
+--describe databag;
+
+bagforprofit= foreach databag GENERATE prodid,prodsubclass,totalcost,totalsales;
+
+--1) gross profit percent for product
+
+
+
+groupbyprod= GROUP bagforprofit by prodid;
+
+sumofamt= foreach groupbyprod GENERATE group,SUM(bagforprofit.totalcost) as cost,SUM(bagforprofit.totalsales) as sales;
+
+grossprofit= foreach sumofamt GENERATE $0,ROUND_TO(((sales-cost) *100/sales),2) as profit;
+
+
+
+--gross profit percent for category
+
+
+groupbycat= GROUP bagforprofit by prodsubclass;
+
+sumofamtcat= foreach groupbycat GENERATE group,SUM(bagforprofit.totalcost) as catcost,SUM(bagforprofit.totalsales) as catsales;
+
+grossprofitpercentcat= foreach sumofamtcat GENERATE $0,ROUND_TO(((catsales-catcost) *100/catsales),2) as profit;
+
+--limit3= limit grossprofitpercentcat 5;
+--dump limit3;
+
+

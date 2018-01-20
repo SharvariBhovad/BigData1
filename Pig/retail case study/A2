@@ -1,0 +1,51 @@
+/*
+--Find total gross profit made by each product and also by each category for all the 4 months data.
+*/
+
+databag= load '/home/hduser/Downloads/data files/4 month data/'
+		using PigStorage(';')
+		AS			     (date:chararray,custid:chararray,age:chararray,area:chararray,
+prodsubclass:chararray,prodid:chararray ,qty:double,totalcost:double,
+totalsales:double);
+
+
+--1) for product product
+
+bagforprofit= foreach databag GENERATE prodid,prodsubclass,totalcost,totalsales;
+
+groupbyprod= GROUP bagforprofit by prodid;
+
+sumofamt= foreach groupbyprod GENERATE group,SUM(bagforprofit.totalcost) as cost,SUM(bagforprofit.totalsales) as sales;
+
+grossprofitprod= foreach sumofamt GENERATE $0,(sales-cost) as profit;
+
+/* 
+----------output:-----
+(4909978112950,71312.0)
+(8712045008539,46586.0)
+(20564100     ,38699.0)
+(4710628131012,34429.0)
+(0729238191921,33645.0)
+*/
+
+
+--2) for category
+
+groupbycat= GROUP bagforprofit by prodsubclass;
+
+sumofamtcat= foreach groupbycat GENERATE group,SUM(bagforprofit.totalcost) as catcost,SUM(bagforprofit.totalsales) as catsales;
+
+grossprofitcat= foreach sumofamtcat GENERATE $0,(catsales-catcost) as profit;
+
+/* 
+----------output:-----
+(320402,356563.0)
+(560402,340999.0)
+(560201,320217.0)
+(100205,201537.0)
+(530101,184621.0)
+
+*/
+
+
+

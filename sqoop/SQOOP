@@ -1,0 +1,156 @@
+LIST DATABASES
+--------------
+
+sqoop list-databases --conect jdbc:mysql://localhost --username root --password 'maitreyee';
+
+LIST TABLES IN DATABASES
+------------------------
+
+sqoop list-tables --connect jdbc:mysql://localhost/college --username root --password 'maitreye';
+
+IMPORT ONE TABLE (with key) from mysql into HDFS
+------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/college --username root --password 'maitreyee' --table student_master --target-dir /niitn/student_master;
+
+Add an extra record in mysql in college db
+INSERT INTO student_master 
+     (name, address)
+     VALUES
+    ("gft", "New Place");
+
+WITH INCREMENTAL
+----------------
+sqoop import --connect jdbc:mysql://localhost/college/ --username root --password '1234' --table student_master --check-column student_id --incremental append --last-value 5 --target-dir /niit/student_master
+
+append- to add value to previous table
+last value 5- sqoop will check column has a value greater than one specified with last value.
+
+COMPRESS FILE
+-------------
+sqoop import --connect jdbc:mysql://localhost/college --username root --password 'maitreyee' --table student_master --target-dir /niit/student_master1 --compress -m 1;
+
+Import one table (without key)from mysql into HDFS
+--------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/college --username root --password 'maitreyee' --table topten --target-dir /niit/topten -m 1;
+
+IMPORT TABLE TO AVRO TYPE OR A SEQUENCE
+----------------------------------------
+sqoop import --connect jdbc:mysql://localhost/college --username root --password 'maitreyee' --table topten --target-dir /niit/top10avro --as-avrodatafile -m 1;
+
+sqoop import --connect jdbc:mysql://localhost/college --username root --password 'maitreyee' --table topten --target-dir /niit/top10seq --as-sequencefile -m 1;
+
+CREATE AVRO TABLE AND LOAD DATA IN HIVE
+---------------------------------------
+
+CREATE TABLE toptenavro
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe'
+STORED AS INPUTFORMAT 'org.apache.hadoop.hive.serde2.avro.AvroSerDe'
+OUTPUTFORMAT
+'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat'
+TBLPROPERTIES (
+'avro.schema.literal'='{
+"namespace":"abc",
+"name":"top10",
+"type":"record",
+"fields": [
+{"name":"customer_id","type":"int"},
+{"name":"fname","type":"string"},
+{"name":"lname","type":"string"},
+{"name":"age","type":"int"},
+{"name":"profession","type":"string"},{"name":"amount","type":"double"}]
+}'
+);
+
+load the data
+-----------------------
+load data inpath '/niit/top10avro/part-m-00000.avro' overwrite into table toptenavro;
+
+
+with where clause
+-----------------
+sqoop import --connect jdbc:mysql://localhost/college --username root --password '' --table student_master --where 'student_id=1 or student_id=3' --target-dir /niit/query -m 1;
+
+with query
+------------
+sqoop import --connect jdbc:mysql://localhost/college --username root --password '1234' --query 'select * from student_master where $CONDITIONS and student_id=2' --target-dir /niit/query1 -m 1;
+
+WITH INNER JOIN
+----------------
+sqoop import --connect jdbc:mysql://localhost/college --username root --password '' --query 'select a.student_id, a.name, a.address,b.result from student_master a, fly b where $CONDITIONS and a.student_id=b.student_id' --target-dir /niit/query2 -m 1;
+
+WITH LEFT OUTER JOINS in form of Query
+--------------------------------------
+sqoop import --connect jdbc:mysql://localhost/college --username root --password '' --query 'select a.student_id, a.name, a.address, b.result from  
+student_master a left outer join fly b on a.student_id = b.student_id where $CONDITIONS' --target-dir /niit/query3 -m 1;
+
+WITH RIGHT OUTER JOINS in form of Query
+---------------------------------------
+sqoop import --connect jdbc:mysql://localhost/college --username root --password '' --query 'select a.student_id, a.name, a.address, b.result from  
+student_master a right outer join fy b on a.student_id = b.student_id where $CONDITIONS' --target-dir /niit/query4 -m 1;
+
+WITH COLUMN CLAUSE
+------------------
+sqoop import --connect jdbc:mysql://localhost/college --username root --password 'maitreyee' --table student_master --columns "student_id,name" --target-dir /niit/query5 -m 1;
+
+IMPORT ALL TABLES FROM MYSQL INTO HDFS
+---------------------------------------
+WITH RIGHT OUTER JOINS in form of Query
+sqoop import --connect jdbc:mysql://localhost/college --username root --password '' --warehouse-dir /niit/all_tables;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 

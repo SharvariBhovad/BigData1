@@ -1,0 +1,53 @@
+Install mysql-server 5.6 or 5.7 with apt-get command.
+sudo apt-get update
+sudo apt-get install mysql-server-5.6
+OR
+sudo apt-get install mysql-server-5.7
+
+
+Step 2 : Login into MySQL Server 
+After mysql server installation get finishes , it start the mysql service automatically.
+ Hence, you can login now in MySQL Server with user root.
+To login into MySQL Server, use the below given command.
+It will ask the mysql root password which you have set during mysql server installation.
+
+mysql -u root -p
+
+Given below is the reference from my server
+$ mysql -u root -p
+Enter password: 
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 36
+Server version: 5.6.17-0ubuntu0.14.04.1 (Ubuntu)
+
+Copyright (c) 2000, 2014, Oracle and/or its affiliates. All rights reserved.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
++--------------------+
+3 rows in set (0.04 sec)
+
+mysql> exit
+Bye
+Step 3 :MySQL Service to Start/Stop/Restart/Status 
+(a) To restart the mysql service
+sudo service mysql restart
+(b) To start mysql Service
+sudo service mysql start
+(c) To stop mysql service
+sudo service mysql stop
+(c) To get status of mysql service
+sudo service mysql status
+NOTE: For start/stop/restart/status of mysql , use service command. 
+

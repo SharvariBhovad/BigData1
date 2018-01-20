@@ -1,0 +1,537 @@
+Sqoop is used to transfer bulk data between hadoop and structure datastores like relational databases(i.e mysql)
+
+transfer data from mysql
+=========================================
+
+start mysql in terminal
+---------------------------
+mysql -u root -p
+
+create database if not present in mysql
+----------------------------------------
+create database college;
+
+select database to work on in mysql
+-----------------------------------
+use college;
+
+create table 
+------------
+
+table topten
+.............
+
+CREATE TABLE topten(
+customer_id INT NOT NULL,
+fname VARCHAR(40) NOT NULL,
+lname VARCHAR(40) NOT NULL,
+age int NOT NULL,
+profession VARCHAR(40) NOT NULL,
+amount double NOT NULL
+);
+
+table student_master
+....................
+
+CREATE TABLE student_master(
+student_id INT NOT NULL AUTO_INCREMENT,
+name VARCHAR(40) NOT NULL,
+address VARCHAR(40) NOT NULL,
+PRIMARY KEY(student_id)
+);
+
+table table fy(
+fy_id INT NOT NULL AUTO_INCREMENT,
+student_id INT NOT NULL,
+result double NOT NULL,
+PRIMARY KEY(fy_id)
+);
+
+display all table in database
+-----------------------------
+show tables;
+
+mysql> show tables;
++-------------------+
+| Tables_in_college |
++-------------------+
+| fy                |
+| student_master    |
+| topten            |
++-------------------+
+3 rows in set (0.00 sec)
+
+describing student_master schema
+--------------------------------
+describe student_master;
+
+mysql> describe student_master;
++------------+-------------+------+-----+---------+----------------+
+| Field      | Type        | Null | Key | Default | Extra          |
++------------+-------------+------+-----+---------+----------------+
+| student_id | int(11)     | NO   | PRI | NULL    | auto_increment |
+| name       | varchar(40) | NO   |     | NULL    |                |
+| address    | varchar(40) | NO   |     | NULL    |                |
++------------+-------------+------+-----+---------+----------------+
+3 rows in set (0.00 sec)
+
+INSERT RECORDS INTO TABLES
+-------------------------
+
+INSERT INTO student_master 
+     (name, address)
+     VALUES
+    ("Sanjay", "Bangalore");
+INSERT INTO student_master 
+     (name, address)
+     VALUES
+    ("Rajiv", "Delhi");
+
+INSERT INTO student_master 
+     (name, address)
+     VALUES
+    ("Rajesh", "Chennai");
+INSERT INTO student_master 
+     (name, address)
+     VALUES
+    ("Sandeep", "Delhi");
+
+INSERT INTO fy 
+     (student_id, result)
+     VALUES
+    (1, 81.90);
+INSERT INTO fy 
+     (student_id, result)
+     VALUES
+    (2, 78.90);
+
+INSERT INTO topten
+( customer_id,fname,lname,age,profession, amount)
+Values
+(4009485,'Stuart','House',58,'Teacher',1943.85);
+
+INSERT INTO topten
+( customer_id,fname,lname,age,profession, amount)
+Values
+(4006425,'Joe','Burns',30,'Economist',1732.09);
+
+Now our data is stored in database.. next we have to transfer these data to HDFS using sqoop
+
+steps to transfer data to sqoop
+------------------------------
+one another terminal to work on sqoop
+to check sqoop is installed or not
+$ sqoop help
+
+
+list the database in sqoop
+--------------------------
+sqoop list-databases --connect jdbc:mysql://localhost --username root --password 'maitreyee';
+
+// here we are displaying password on command line which is bad practice from command line point of view .. 
+// thus use -P 
+
+
+sqoop list-databases --connect jdbc:mysql://localhost --username root -P ;
+// it will ask to enter password..
+Enter password: 
+
+
+17/12/21 20:39:53 INFO manager.MySQLManager: Preparing to use a MySQL streaming resultset.
+information_schema
+college
+mysql
+performance_schema
+
+list table in a database
+------------------------
+sqoop list-tables --connect jdbc:mysql://localhost/college --username root -P;
+
+fy
+student_master
+topten
+
+//here sqoop connected with sql and displayed the database and table present inside it.. 
+//now we will have to import these table from sql to hdfs
+
+for importing we have two option:-
+1. with primary key
+   sqoop splits data on primary key, thus primary key should be present
+2. without primary key
+
+
+import table(with key) from mysql into HDFS
+-------------------------------------------
+sqoop import --connect jdbc://localhost/college --username root -P --table student_master;
+
+
+Got error creating database manager: java.io.IOException: No manager for connect string: jdbc://localhost/college
+--because :mysql was missing
+
+
+sqoop import --connect jdbc:mysql//localhost/college --username root -P --table student_master;
+
+ /*Encountered IOException running import job: java.net.ConnectException: Call From sharvari-Vostro-3446/127.0.1.1 to localhost:54310 failed on connection exception: java.net.ConnectException: Connection refused;*/
+
+-- hdfs service not started
+
+
+// here we havent mention target directory
+
+sqoop import --connect jdbc:mysql://localhost/college --username root -P --table student_master;
+--- data got stored in user/hduser/student_master
+--- giving target directory address is not compulsary
+
+sqoop import --connect jdbc:mysql://localhost/college --username root -P --table student_master --target-dir /sqoop_prac/student_master_data;
+--- data got stored in provided target directory address as /sqoop_prac/student_master_data
+
+-------------------------------------------------------------
+Incremental import
+-------------------
+we have retreived data of student_master from db to hdfs. assuming new data got added in db.. then we will have to updated hdfs data too. to update the data we will append newly generated data to current hdfs file using incremental import
+
+1.append == should be used when new rows are continuallly being added with increasing row id
+2. --check-column == we will have to specify column containing the rowid with check column
+3. --last-value == sqoop will check the column. if a column has a value greater than one specified in last value then it will import it.
+last value should be last value before new update of column specified 
+
+output:
+at the end of incremental import, the value which should be specified as --last-value for a subsequent import is printed on screen.
+
+we will add new row to db
+-------------------------
+INSERT INTO student_master 
+     (name, address)
+     VALUES
+    ("jai", "New ground");
+
+mysql> select * from student_master;
++------------+---------+------------+
+| student_id | name    | address    |
++------------+---------+------------+
+|          1 | Sanjay  | Bangalore  |
+|          2 | Rajiv   | Delhi      |
+|          3 | Rajesh  | Chennai    |
+|          4 | Sandeep | Delhi      |
+|          5 | New     | New Place  |
+|          6 | great   | New Place  |
+|          7 | dfgfd   | fgh        |
+|          8 | gft     | New Place  |
+|          9 | jai     | New ground |
++------------+---------+------------+
+9 rows in set (0.00 sec)
+
+update the data to hdfs using incremental
+-----------------------------------------
+sqoop import --connect jdbc:mysql://localhost/college --username root -P --table student_master --check-column student_id --incremental append --last-value 8 --target-dir /sqoop_prac/student_master_data;
+
+output:
+17/12/21 22:26:05 INFO mapreduce.ImportJobBase: Retrieved 1 records.
+17/12/21 22:26:05 INFO util.AppendUtils: Appending to directory student_master_data
+
+17/12/21 22:26:06 INFO tool.ImportTool:  --incremental append
+17/12/21 22:26:06 INFO tool.ImportTool:   --check-column student_id
+17/12/21 22:26:06 INFO tool.ImportTool:   --last-value 9 //displays newly updated last value
+17/12/21 22:26:06 INFO tool.ImportTool: (Consider saving this with 'sqoop job --create')
+
+----------------------------------------------------------------
+compress file
+-------------
+sqoop import --connect jdbc:mysql://localhost/college --username root --P --table student_master --target-dir /sqoop_prac/compress_data -m 1;
+
+why mapper 1?
+
+//here we have specified one mapper (-m 1)
+-------------------------------------------------------------------
+
+import table without key from mysql to hdfs
+
+if primary key is not provided thus sqoop will not be able to split data and it will fail
+unless we explicitly set no of mapper as 1.
+
+we will use data without primary key i.e. topten table
+mysql> describe topten;
++-------------+-------------+------+-----+---------+-------+
+| Field       | Type        | Null | Key | Default | Extra |
++-------------+-------------+------+-----+---------+-------+
+| customer_id | int(11)     | NO   |     | NULL    |       |
+| fname       | varchar(40) | NO   |     | NULL    |       |
+| lname       | varchar(40) | NO   |     | NULL    |       |
+| age         | int(11)     | NO   |     | NULL    |       |
+| profession  | varchar(40) | NO   |     | NULL    |       |
+| amount      | double      | NO   |     | NULL    |       |
++-------------+-------------+------+-----+---------+-------+
+6 rows in set (0.04 sec)// here no key is specified.
+
+mysql> select * from topten;
++-------------+--------+-------+-----+------------+---------+
+| customer_id | fname  | lname | age | profession | amount  |
++-------------+--------+-------+-----+------------+---------+
+|     4009485 | Stuart | House |  58 | Teacher    | 1943.85 |
+|     4006425 | Joe    | Burns |  30 | Economist  | 1732.09 |
++-------------+--------+-------+-----+------------+---------+
+2 rows in set (0.10 sec)
+
+sqoop import --connect jdbc:mysql://localhost/college --username root -P --table topten --target-dir /sqoop_prac/without_key_ex -m 1 ;
+
+------------------------------------------------
+import table to avro type or a sequence type
+
+--as-filetype == is used to mention type (by default it is textype)
+
+sqoop import --connect jdbc:mysql://localhost/college --username root -P --table topten --target-dir /sqoop_prac/avrofile --as-avrodatafile -m 1;
+/*avro data
+{"type":"record","name":"topten","doc":"Sqoop import of topten","fields":[{"name":"customer_id","type":["null","int"],"default":null,"columnName":"customer_id","sqlType":"4"},{"name":"fname","type":["null","string"],"default":null,"columnName":"fname","sqlType":"12"},{"name":"lname","type":["null","string"],"default":null,"columnName":"lname","sqlType":"12"},{"name":"age","type":["null","int"],"default":null,"columnName":"age","sqlType":"4"},{"name":"profession","type":["null","string"],"default":null,"columnName":"profession","sqlType":"12"},{"name":"amount","type":["null","double"],"default":null,"columnName":"amount","sqlType":"8"}],"tableName":"topten"}���p���x`e?�J �����
+                                                  Stuart
+HousetTeacherfffff_�@���Joe
+Burns<Economist�(\�@���p���x`e?�J */
+
+sequence file
+--------------
+sqoop import --connect jdbc:mysql://localhost/college --username root --password '' --table topten --target-dir /niit/top10seq --as-sequencefile -m 1 ;
+-----------------------------------------------------------------
+now load the above avro data into avro table and then to hive
+
+create table toptenavro
+ROW FORMAT SERDE
+'org.apache.hadoop.hive.serde2.avro.AvroSerDe'
+STORED AS INPUTFORMAT
+'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat'
+OUTPUTFORMAT
+'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat'
+TBLPROPERTIES (
+	'avro.schema.literal '=' {
+	"namespace": "abc",
+	"name": "top10",
+	"type": "record",
+	"fields": [
+{"name":"customer_id","type":"int"},
+{"name":"fname","type":"string"},
+{"name":"lname","type":"string"},
+{"name":"age","type":"int"},
+{"name":"profession","type":"string"},
+{"name":"amount","type":"double"}]
+}');
+
+
+load data inpath '/niit/top10avro/part-m-00000.avro' overwrite into table toptenavro;
+------------------------------------------------------------
+Using where clause
+-----------------
+
+sqoop import --connect jdbc:mysql://localhost/college --username root -P --table student_master --where 'student_id=3 or student_id=1' --target-dir /sqoop_prac/whereex ;
+// without specifying mapper 1 it utilize 3 map task.. and 3 files where created in hdfs.. but since above query fetched 2 records one file was blank.
+
+Launched map tasks=3
+		Other local map tasks=3
+		Total time spent by all maps in occupied slots (ms)=18410
+
+
+sqoop import --connect jdbc:mysql://localhost/college --username root -P --table student_master --where 'student_id=3 or student_id=1' --target-dir /sqoop_prac/whereex -m 1;
+
+Launched map tasks=1
+Other local map tasks=1
+------------------------------------------------------------------------
+Using Query
+------------
+here we have to compulsary specify target-dir
+two type:
+1. query ('') == $CONDITION
+2. query ("") == \$CONDITION
+else it will throw exception
+Encountered IOException running import job: java.io.IOException: Query [select * from student_master where  and student_id=2] must contain '$CONDITIONS' in WHERE clause.
+
+
+sqoop import --connect jdbc:mysql://localhost/college --username root -P --query "select * from student_master where $CONDITIONS and student_id=2" --target-dir sqoop_prac/queryex2 -m 1;
+
+----------------------------------------------------------------------
+with inner join
+---------------
+sqoop import --connect jdbc:mysql://localhost/college --username root -P --query 'select a.student_id,a.name,a.address,b.result from student_master a,fy b where $CONDITIONS and a.student_id=b.student_id' --target-dir /sqoop_prac/inner_ex -m 1;
+
+1,Sanjay,Bangalore,81.9
+2,Rajiv,Delhi,78.9
+
+
+WITH LEFT OUTER JOINS in form of Query
+---------------------------------------
+sqoop import --connect jdbc:mysql://localhost/college --username root --password '' --query 'select a.student_id, a.name, a.address, b.result from  
+student_master a left outer join fy b on a.student_id = b.student_id where $CONDITIONS' --target-dir /niit/query3 -m 1;
+
+WITH RIGHT OUTER JOINS in form of Query
+-----------------------------------------
+sqoop import --connect jdbc:mysql://localhost/college --username root --password '' --query 'select a.student_id, a.name, a.address, b.result from  
+student_master a right outer join fy b on a.student_id = b.student_id where $CONDITIONS' --target-dir /niit/query4 -m 1;
+
+with column clause
+--------------------
+here only data of specified column will be displayed
+
+
+sqoop import --connect jdbc:mysql://localhost/college --username root -P --table student_master --columns "student_id,name" --target-dir /sqoop_prac/columnex -m 1; 
+
+1,Sanjay
+2,Rajiv
+3,Rajesh
+4,Sandeep
+5,New
+6,great
+7,dfgfd
+8,gft
+9,jai
+
+-----------------------------------------------------------------------
+import all tables from mysql into hdfs
+--------------------------------------
+here all tables will be fetched into hdfs using --warehouse-dir
+ 
+qoop import-all-tables --connect jdbc:mysql://localhost/college --username root -P --warehouse-dir /sqoop_prac/all_tables;
+
+import data into hive managed tables
+-------------------------------------
+
+for sending data to hive we will have to create tables inside one database
+
+create database in hive
+-----------------------
+create database sqoop_ex;
+
+use sqoop_ex;
+
+exit from hive before running sqoop
+-------------------------------------
+hive >quit;
+
+
+
+importing table
+---------------
+--hive-import = to import from hive
+--hive-table = s
+
+sqoop import --connect jdbc:mysql://localhost/college --username root -P --table student_master --hive-import --hive-table sqoop.student_profile -m 1;
+
+sqoop import --connect jdbc:mysql://localhost/college --username root -P --table student_master --hive-import --create-hive-table --hive-table sqoop.student_profile1 -m 1;
+since we were working on two terminal.. dont forget exit from hive terminal before running this ... cause otherwise we will get exception.. 
+ Caused by: java.sql.SQLException: Another instance of Derby may have already booted the database /usr/local/hive/metastore_db.
+
+
+//here we did not mentioned target dir so folder with table name was created in user/hduser/student_master on hdfs
+
+hive (sqoop)> select * from student_profile1
+            > ;
+OK
+1	Sanjay	Bangalore
+2	Rajiv	Delhi
+3	Rajesh	Chennai
+4	Sandeep	Delhi
+5	New	New Place
+6	great	New Place
+7	dfgfd	fgh
+8	gft	New Place
+9	jai	New ground
+Time taken: 0.8 seconds, Fetched: 9 row(s)
+
+-----------------------------------------------------------------------
+importing fy table
+sqoop import --connect jdbc:mysql://localhost/college --username  root --password '' --table fy --hive-import --hive-table college.fyresults -m 1;
+
+-------------------------------------------------------------------
+importing specific column in hive
+
+sqoop import --connect jdbc:mysql://localhost/college --username root -P --table student_master --columns "student_id,name" --hive-import --hive-table sqoop.studentcol -m 1;
+
+hive (sqoop)> select * from studentcol;
+OK
+1	Sanjay
+2	Rajiv
+3	Rajesh
+4	Sandeep
+5	New
+6	great
+7	dfgfd
+8	gft
+9	jai
+Time taken: 0.733 seconds, Fetched: 9 row(s)
+-------------------------------------------------------------------
+
+import specific data using where clause
+
+sqoop import --connect jdbc:mysql://localhost/college --username  root -P --table student_master --where "student_id=1 or student_id=3" --hive-import --hive-table sqoop.student2 -m 1;
+
+hive (sqoop)> select * from student2;
+OK
+1	Sanjay	Bangalore
+3	Rajesh	Chennai
+Time taken: 0.768 seconds, Fetched: 2 row(s)
+
+-------------------------------------------------------------------
+importing data using query
+
+here data will get stored in hive as well as on hdfs as we have to compulsary mention target directory name
+
+sqoop import --connect jdbc:mysql://localhost/college --username root -P --query 'select a.student_id, a.name, a.address, b.result from student_master a, fy b where $CONDITIONS and a.student_id=b.student_id' --hive-import --hive-table niit.studentjoin --target-dir /niit/query20 -m 1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

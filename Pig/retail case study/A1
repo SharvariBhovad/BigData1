@@ -1,0 +1,61 @@
+
+
+/*Find out the customer I.D for the customer and the date of transaction who has spent the maximum amount in a month and in all the 4 months. 
+Answer would be - total 5 customer IDs
+1) One for each month
+2) One for all the 4 months.*/
+
+databag= load '/home/hduser/Downloads/data files/4 month data/'
+		using PigStorage(';')
+		AS			     (date:chararray,custid:chararray,age:chararray,area:chararray,
+prodsubclass:chararray,prodid:chararray ,qty:double,totalcost:double,
+totalsales:double);
+--describe databag;
+
+unwantedfilter= FOREACH databag GENERATE $0,custid,totalsales;
+
+
+--1) One for each month
+
+groupbycust= GROUP unwantedfilter BY $1;
+
+totalYearlySpend= FOREACH groupcust GENERATE group, SUM(unwantedfilter.totalsales) as total;
+
+groupAllValue= group totalYearlySpend all;
+
+maxYearlySpend= FOREACH groupAllValue GENERATE group, MAX(totalYearlySpend.$1) as maxvalue;
+
+newrecord= FILTER totalYearlySpend BY total == maxYearlySpend.maxvalue;
+
+/*
+-------output:------
+(01622362  ,459771.0)
+*/
+
+
+2) One for all the 4 months.
+
+monthValue= FOREACH unwantedfilter GENERATE SUBSTRING($0,5,7) as month,custid,totalsales;
+
+
+groupbyBoth= group monthValue BY (month,custid);
+
+totalSpendInYear= FOREACH groupBoth GENERATE group,MAX(monthValue.totalsales) as newtotal;
+
+groupAllValueNew= group totalSpendInYear by group.$0;
+
+maxMonthlySpend= FOREACH groupAllValueNew GENERATE group,MAX(totalSpendInYear.newtotal) as maxvalue1;
+
+newbag= JOIN monthValue by (month),maxMonthlySpend by($0,maxvalue1);
+
+finalbag = FOREACH newbag GENERATE $0,$1,$2;
+dump finalbag;
+
+/*
+-------output:------
+
+(01,01062489  ,45554.0)
+(02,01622362  ,444000.0)
+(11,02119083  ,62688.0)
+(12,02131221  ,70589.0)
+(12,02134819  ,70589.0)*/

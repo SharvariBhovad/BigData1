@@ -1,0 +1,101 @@
+databag= load '/home/hduser/Downloads/data files/4 month data/'
+		using PigStorage(';')
+		AS			     (date:chararray,custid:chararray,age:chararray,area:chararray,
+prodsubclass:chararray,prodid:chararray ,qty:double,totalcost:double,
+totalsales:double);
+
+/*
+Find out the (top 5*) viable products and the (top 5*) product subclass for the age group A, B, C etc..... Data should be taken for all the 4 months
+*/
+
+
+--1) top 5 viable product
+firstforviableprod= foreach databag generate age,prodid,totalcost,totalsales;
+
+groupbyprodid= GROUP firstforviableprod by (age,prodid);
+
+totalsum= foreach groupbyprodid GENERATE group, SUM(firstforviableprod.totalsales) - SUM(firstforviableprod.totalcost)  as total;
+
+
+filtervalue= filter totalsum by total >= 0 ;
+
+groupage= GROUP filtervalue by group.$0; 
+
+top5= foreach groupage {
+sorted = order filtervalue by $1 desc;
+top1 = limit sorted 3;
+generate flatten(top1);
+};
+
+dump limit02;
+
+/*
+((A ,4711588210441),12025.0)
+((A ,20559045     ),3290.0)
+((A ,4973167032060),2163.0)
+((B ,8712045008539),7318.0)
+((B ,4710628119010),6827.0)
+((B ,4902430493437),6419.0)
+((C ,8712045008539),10153.0)
+((C ,0729238191921),7840.0)
+((C ,4909978112950),7386.0)
+((D ,4909978112950),17612.0)
+((D ,8712045008539),15155.0)
+((D ,4710628131012),10462.0)
+((E ,4909978112950),14628.0)
+((E ,4710628131012),7810.0)
+((E ,4901422038939),7317.0)
+((F ,4909978112950),10276.0)
+((F ,20556433     ),6388.0)
+((F ,20564100     ),4770.0)
+((G ,4909978112950),9370.0)
+((G ,0729238191921),4190.0)
+((G ,4710114128038),2704.0)
+((H ,8712045011317),4706.0)
+((H ,0300086780026),3254.0)
+((H ,4909978112950),3148.0)
+((I ,8712045011317),2291.0)
+((I ,4909978112950),2142.0)
+((I ,8712045000151),2096.0)
+((J ,4710043552102),1460.0)
+((J ,0041736007284),1459.0)
+((J ,4710960918036),1377.0)
+((K ,20564100     ),2340.0)
+((K ,4902430493437),2172.0)
+((K ,4711863590077),1980.0)
+*/
+
+--1) top 5 viable productclass
+firstforviablecat= foreach databag generate age,prodsubclass,totalcost,totalsales;
+
+groupbycat= GROUP firstforviablecat by (age,prodsubclass);
+
+totalsum1= foreach groupbycat GENERATE group, SUM(firstforviablecat.totalsales) - SUM(firstforviablecat.totalcost)  as total;
+
+
+filtervalue1= filter totalsum1 by total >= 0 ;
+
+groupagecat= GROUP filtervalue1 by group.$0; 
+
+top5= foreach groupagecat {
+sorted = order filtervalue1 by $1 desc;
+top1 = limit sorted 3;
+generate flatten(top1);
+};
+
+dump limit02;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

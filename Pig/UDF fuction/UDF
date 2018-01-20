@@ -1,0 +1,21 @@
+for user define function write java code 
+1. import external jar -- /usr/local/pig
+2. write user define fuction class by extending EvalFunc and overriding its exec function
+3. export the jar file
+4. register following jar in pig
+  4.1 start pig in local
+      >> pig -x local
+
+  4.2 register the jar
+      >> register /home/hduser/pigudf.jar
+
+5. load the data in bag
+ bag1= load '/home/hduser/wordCountText' using TextLoader() as (line:chararray);
+
+6. define alias for our function
+DEFINE ConvertLowerToUpper myUDF.UPPER();  
+
+7. use new function
+bag2 = foreach bag1 generate ConvertLowerToUpper(line);
+
+dump bag2;

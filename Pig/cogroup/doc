@@ -1,0 +1,15 @@
+hduser@sharvari-Vostro-3446:~$ cat group1file.txt
+cat: group1file.txt: No such file or directory
+hduser@sharvari-Vostro-3446:~$ gedit group1file.txt
+hduser@sharvari-Vostro-3446:~$ cat group1file.txt
+101,20
+102,25
+101,30
+102,40
+hduser@sharvari-Vostro-3446:~$ gedit group2file.txt
+hduser@sharvari-Vostro-3446:~$ cat group2file.txt
+101,30
+102,30
+101,40
+102,50
+

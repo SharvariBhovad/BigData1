@@ -1,0 +1,95 @@
+Sqoop Installation
+su hduser
+cd ~
+wget http://www-eu.apache.org/dist/sqoop/1.4.6/sqoop-1.4.6.bin__hadoop-2.0.4-alpha.tar.gz
+
+tar -xvzf sqoop-1.4.6.bin__hadoop-2.0.4-alpha.tar.gz
+
+
+mv  sqoop-1.4.6.bin__hadoop-2.0.4-alpha  sqoop
+sudo mv /home/hduser/sqoop /usr/local
+sudo chown -R hduser:hadoop /usr/local/sqoop
+
+nano ~/.bashrc
+
+### Sqoop Home directory ####
+export SQOOP_HOME=/usr/local/sqoop
+export SQOOP_CONF_DIR=$SQOOP_HOME/conf
+export SQOOP_CLASSPATH=$SQOOP_CONF_DIR:$SQOOP_HOME/lib:$SQOOP_HOME
+export PATH="$SQOOP_HOME/bin:$PATH"
+export SQOOP_JAR_DIR=$SQOOP_HOME
+export HADOOP_CLASSPATH=$HADOOP_CLASSPATH:$SQOOP_CLASSPATH
+export SQOOP_USER_CLASSPATH=$SQOOP_HOME
+
+ source ~/.bashrc
+==============================================================
+
+cd /usr/local/hadoop/etc/hadoop
+ls yarn-site.xml
+nano or gedit yarn-site.xml
+Update  /usr/local/hadoop/etc/hadoop/ yarn-site.xml with below properties
+<configuration>
+<property>
+    <name>yarn.nodemanager.aux-services</name>
+    <value>mapreduce_shuffle</value>
+  </property>
+
+  <property>
+    <name>yarn.nodemanager.aux-service.mapreduce_shuffle.class</name>
+    <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+  </property>
+  
+<property>
+    <name>mapreduce.shuffle.port</name>
+    <value>2233</value>
+  </property>
+</configuration>
+
+=============================================================
+Add the below property in /usr/local/hadoop/etc/hadoop/mapred-site.xml
+<property>
+<name>mapreduce.framework.name</name>
+<value>yarn</value>
+</property>
+
+
+sudo cp /usr/local/hive/lib/libthrift*.jar  /usr/local/sqoop/lib
+
+$ sudo cp /usr/local/sqoop/conf/sqoop-env-template.sh  /usr/local/sqoop/conf/sqoop-env.sh 
+sudo nano sqoop-env.sh
+Check and add if not present the  below lines in /usr/local/sqoop/conf/sqoop-env.sh
+export SQOOP_HOME=/usr/local/sqoop
+export SQOOP_JAR_DIR=$SQOOP_HOME
+export SQOOP_CLASSPATH=$SQOOP_HOME/lib
+
+give all the path for
+hive
+export HIVE_HOME=/usr/local/hive
+hbase
+export HBASE_HOME=/usr/local/hbase
+hadoop mapred home
+export HADOOP_MAPRED_HOME=/usr/local/hadoop
+hadoop common home
+export HADOOP_COMMON_HOME=/usr/local/hadoop
+
+
+
+Restart the hadoop services
+$ stop-all.sh
+$ start-all.sh
+
+Now download the mysql jdbc connector from the following link
+and copy the jar file which is under the zip file to lib under /usr/local/sqoop
+
+https://dev.mysql.com/downloads/connector/j/
+
+file name – (mysql-connector-java-5.1.44.tar.gz)
+mysql-connector-java-5.1.44.tar.gz
+it will be saved in Downloads folder
+cd Downloads
+sudo tar -xvzf mysql-connector-java-5.1.44.tar.gz 
+cd mysql-connector-java-5.1.44
+cp mysql-connector-java-5.1.45-bin.jar /usr/local/sqoop/lib/
+
+Sqoop is ready to connect to your mysql database
+$ sqoop help
