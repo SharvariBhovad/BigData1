@@ -1,0 +1,167 @@
+-----------------------------------------------------------------
+hive--partition and bucketing pratice
+-----------------------------------------------------------------
+data file== /chainmap/txns1.txt
+
+1) first create transaction table
+create table txnrecords(txnno INT, txndate STRING, custno INT, amount DOUBLE, 
+category STRING, product STRING, city STRING, state STRING, spendby STRING)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+2) load the data into that table
+LOAD DATA INPATH '/chainmap/txns1.txt' OVERWRITE INTO TABLE txnrecords;
+
+
+3) set dynamic/static partition
+
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.exec.dynamic.partition=true;
+
+
+4) create partion table
+
+CREATE TABLE transByCat(tno INT, tdate STRING, custno INT, amount double, product String, city String, state STRING, spendby STRING)
+partitioned by (category STRING)
+row format delimited
+fields terminated by ','
+stored as textfile; 
+
+5) load data into partitioner table
+
+FROM txnrecords txn INSERT OVERWRITE TABLE transByCat PARTITION(category) select txn.txnno,txn.txndate,txn.custno,txn.amount,txn.product,
+txn.city,txn.state,txn.spendby,txn.category DISTRIBUTE BY category;
+
+--in browser we will get different blocks for ech category
+
+/user/hive/warehouse/manageexternal.db/transbycat
+
+
+//if we download the file from warehouse ...i.e for category = 'Airsports' then we will get data related to Airsports
+
+
+but ... category column with value airsport wont be present
+
+select * from transByCat where category="Air Sports";
+
+but if we run select command on same.. then last column will have airsport
+
+we will have 2 set of blocks :
+1.original block 
+2.partitioned block
+
+6) parition on month
+
+CREATE TABLE transByMonth(txnno INT ,txndate STRING, custno INT,amount DOUBLE, category string, product STRING,city STRING, state STRING ,spendby STRING)
+partitioned by (month STRING) 
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+FROM txnrecords txn INSERT OVERWRITE TABLE transByMonth PARTITION(month) select txn.txnno,txn.txndate,txn.custno,txn.amount,txn.product,
+txn.city,txn.state,txn.spendby,txn.category,substring(txn.txndate,1,2) as month DISTRIBUTE BY substring(txndate,1,2);
+
+load data into partition table(single bucket) using multiple partition column
+-------------------------------------------------------------
+
+         transaction
+             |
+         (category)
+         /        \
+     airsport   gaming
+       |          | 
+    (spendby)   (spendby)
+     /    \      /   \
+  cash  credit cash credit
+
+
+CREATE TABLE txnsByCatnSpendby(txnno INT ,txndate STRING, custno INT,amount DOUBLE,product STRING, city STRING,state STRING)
+partitioned by (category STRING, spendby string)
+row format delimited 
+fields terminated by ','
+stored as textfile;
+
+from txnrecords txn INSERT OVERWRITE TABLE txnsByCatnSpendby PARTITION(category,spendby) select txn.txnno,txn.txndate,txn.custno,txn.amount,txn.product,
+txn.city,txn.state,txn.category,txn.spendby DISTRIBUTE By category,spendby;
+
+----------------------------------------------------------
+static partitioning
+
+1) create partion table
+
+CREATE TABLE transByCatStatic(tno INT, tdate STRING, custno INT, amount double, product String, city String, state STRING, spendby STRING)
+partitioned by (category STRING)
+row format delimited
+fields terminated by ','
+stored as textfile; 
+
+2) load data into static partition table
+
+from txnrecords txn INSERT OVERWRITE TABLE transByCatStatic PARTITION(category='Gymnastics') select txn.txnno,txn.txndate,txn.custno,txn.amount,txn.product,
+txn.city,txn.state,txn.spendby where txn.category='Gymnastics' ;
+
+====================================================================
+BUCKETING
+
+
+set hive.enforce.bucketing=true;
+
+
+select sum(amount) from txnsrecords where category='Gymnastics' and (state='California' or state='New Jersey');
+
+create partion table with multiple bucket
+-----------------------------------------
+CREATE TABLE transBucket(txnno INT, txndate STRING,custno INT,amount DOUBLE, product STRING,city STRING,state STRING,spendby STRING)
+partitioned by (category STRING)
+clustered by (state) into 10 buckets
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+
+Load data into partition table (with multiple buckets)
+---------------------------------------------------
+from txnrecords txn INSERT OVERWRITE TABLE transBucket PARTITION(category) select txn.txnno, txn.txndate,txn.custno, txn.amount,txn.product,txn.city,txn.state, txn.spendby, txn.category DISTRIBUTE By category;
+
+here we are partitioning on category
+we will have different category follwed by 10 buckets
+each bucket will have specific citys ..i.e. 3 cities in one bucket
+
+city in each bucket are allocated as per hash value of states
+
+
+here no.of buckets == no. of reducer
+
+
+
+
+
+
+
+
+
+
+
+
+
+===============================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

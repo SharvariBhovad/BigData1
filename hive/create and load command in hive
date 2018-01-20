@@ -1,0 +1,88 @@
+A. create database
+------------------
+create database retail;
+
+--this creates a folder by the name of retail.db under /user/hive/warehouse
+
+A1. show all the databases in hive
+----------------------------------
+show databases;
+
+B. Select a database
+--------------------
+use retail;
+
+B1. Show tables under the database
+----------------------------------
+show tables;
+
+
+C1. Create transaction table
+-------------------------------
+create table txnrecords(txnno INT, txndate STRING, custno INT, amount DOUBLE, 
+category STRING, product STRING, city STRING, state STRING, spendby STRING)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+C2. Create customer table
+-------------------------------
+create table customer(custno INT, firstname STRING, lastname STRING, age INT, profession STRING)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+nyse table
+--------------------------------
+create table NYSE(exchange_name STRING,stock_id STRING,stock_date DATE,open DOUBLE,high DOUBLE,low DOUBLE,close DOUBLE,volume BIGINT,adj_close DOUBLE) 
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+D1. Load the data into the table (from local file system)
+-----------------------------------------------------
+LOAD DATA LOCAL INPATH '/home/hduser/txns1.txt' OVERWRITE INTO TABLE txnrecords; // will delete old data and add new data
+
+LOAD DATA LOCAL INPATH '/home/hduser/custs' OVERWRITE INTO TABLE customer;
+
+LOAD DATA LOCAL INPATH '/home/hduser/custs_add' INTO TABLE customer;
+
+LOAD DATA LOCAL INPATH '/home/hduser/NYSE.csv' INTO TABLE NYSE;
+
+load- transfer from local to hdfs
+to save the file on hdfs
+if there are many file then overwrite 1st file only .. not others..
+load and put does same work.. but load doesnt need perfect file
+-------------------------
+INSERT OVERWRITE DIRECTORY '/niit/custcount' row format delimited fields terminated by ',' 
+select profession, count(*) from customer group by profession;
+
+INSERT OVERWRITE DIRECTORY '/niit/custcount' row format delimited fields terminated by ',' 
+select profession, count(*) from customer group by profession;
+----
+INSERT OVERWRITE DIRECTORY '/niit/nyse_example' row format delimited fields terminated by ',' 
+select count(*) from nyse;
+
+INSERT OVERWRITE DIRECTORY '/niit/nyse_totalstock' row format delimited fields terminated by ',' 
+select stockid,sum(volume) as total_vol from nyse group by stock_id order by total_vol desc;
+
+INSERT OVERWRITE DIRECTORY '/niit/nyse_totalstock' row format delimited fields terminated by ',' 
+select stock_id,(((high-low)*100)/low) as variance from nyse group by stock_id order by variance desc limit 5;
+
+tp 5 max variances and save as csv file  
+INSERT OVERWRITE DIRECTORY '/niit/nyse_totalstock' row format delimited fields terminated by ',' 
+select stock_id,max(((high-low)*100)/low) as variance from nyse group by stock_id order by variance desc limit 5;
+
+
+float percentChange = ((highVal - lowVal) * 100) / lowVal;
+// high  variance is risky
+------------------
+N1. how do i know i am in which database currently// permant in site.xml
+--------------------------------------------------
+set hive.cli.print.current.db=true;
+
+N2. how do i print my headers of my table
+-------------------------------------
+set hive.cli.print.header=true;
+
+ctrl +l to clear terminal

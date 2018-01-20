@@ -1,0 +1,72 @@
+2=====================================================================
+Managing and External table
+=====================================================================
+creating new database
+------------------
+create database manageExternal;
+
+creating cut_table
+------------------
+
+create table cust_table(custno INT,firstname STRING,lastname STRING,
+age INT,profession STRING)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+load data into table from local file system to hdfs
+---------------------------------------------------
+hadoop fs -put /home/hduser/custs /manage_external_table_cust
+
+// these is first copy.. from local to hdfs
+now we will move these to hdfs(hdfs->hdfs)
+
+load data into table from hdfs system to hdfs
+----------------------------------------------------
+LOAD DATA INPATH '/manage_external_table_cust/custs' 
+OVERWRITE INTO TABLE cust_table;
+
+// here we moved data from manage_external_table_cust to cust_table
+data from manage_external_table_cust no more exist..
+describe formatted cust_table;
+>> table type: MANAGED_TABLE
+
+
+if we delete cust_table
+
+drop table cust_table;
+
+it will drop table and also data from hive warehouse
+(which is risky since data can be needed anytime in future.. and loading it  will take more time)
+====================================================================
+EXTERNAL TABLE
+====================================================================
+first load data on hdfs
+
+hadoop fs -put /home/hduser/custs /manage_external_table_cust
+
+create external table
+----------------------
+create external table cust_table(custno INT,firstname STRING,lastname STRING,
+age INT,profession STRING)
+row format delimited
+fields terminated by ','
+stored as textfile
+location '/manage_external_table_cust';
+
+here we will provide folder name in which data file is present
+here we just need to create table
+no need to load data to external table.. our table is mapp to data
+
+create external table cust_table1(custno INT,firstname STRING,lastname STRING,
+age INT,profession STRING)
+row format delimited
+fields terminated by ','
+stored as textfile
+location '/manage_external_table_cust';
+
+if we drop external table data will be present in hdfs
+n table is not visible in warehouse.. since external table are just metadata of table mapped to data..
+
+
+
