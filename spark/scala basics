@@ -1,0 +1,147 @@
+FOR LOOP IN SCALA
+---------------------------
+for (i <- 1 to 5)println(i)
+
+for (i <- 5 to 1 by -1)println(i)  -- decrement by 1
+
+DOUBLE FOR LOOP 
+------------------------
+for (i <- 1 to 5 ; j <- 1 to 4) println(s"($i , $j)") -- substitute variable in string, for integer use d
+
+
+CHECK CONDITION INSIDE FOR i==j (is inefficent)
+-------------
+for (i <- 1 to 5; j <- 1 to 4)
+{
+if (i == j)
+println(s"($i, $j)")
+}  
+
+
+other option directly write if (FOR LOOP WITH GUARD CONDITION)
+---------------------------------
+for (i <- 1 to 5; j <- 1 to 4 if i == j)
+println(s"($i, $j)")
+
+val x = for (i <-1 to 20 if  i % 2 ==0) println(i)
+
+collect in list
+------------------
+for (i <- 1 to 20 if i % 2 == 0) yield(i)
+yield --- output is stored in list and send as vector
+
+print using 
+x
+
+define function in scala
+--------------------------
+def funtion_name(funtion params): return_type ={
+code ....
+
+}
+
+FUNCTION TO CALCULATE AREA OF RECTANGLE
+---------------------------------------
+
+def areaRect(l: Float, b: Float): Float ={
+	l*b  -- dont have to mention return cause last statement in scala is cnsidered return type
+}
+
+areaRect(10,9)
+areaRect(10.23f, 9.5f)
+
+FUNTION TO FIND EVEN NUMBER
+---------------------------------------
+def isEvenNumber(number:Int): Boolean = {
+number % 2 == 0 -- no need of if.. cause statement is already boolean expression
+}
+isEvenNumber(100)
+
+COLLECTIONS: ARRAY
+------------------------
+val n = new Array[int](10)
+val s = new Array[String](10)
+val st = Array("Hello","World")
+--here how can we change value of array if val is immutable
+
+val is immutable means reference remains same we can change value i.e. n will point to array
+
+arr(0) // 0 by default
+
+arr(0) = 100 
+arr(1) = 200 
+
+to print array
+-----------
+arr
+arr.foreach(println)
+
+COLLECTIONS: ARRAY BUFFERS
+---------------------------
+array can grow in length
+
+	import package
+	--------------
+	import scala.collection.mutable.ArrayBuffer
+
+	val arr = new ArrayBuffer[Int]()
+
+	adding individual elements
+	--------------------------
+	arr +=100
+	arr +=200
+	arr +=300
+	arr +=400
+
+	adding all together
+	-------------------
+	arr+= (300, 400, 500)
+
+	append to existing array buffer
+	------------------------------- 
+	arr ++= Array(600, 700, 800)
+
+	to remove element from array
+	------------------------------
+	arr --= Array(700, 800)
+
+for(n <- arr if n % 2 != 0) println(n)
+for(n <- arr if n % 2 != 0) yield(n)
+
+use filter() 
+
+
+COMMON OPERATIONS FOR ARRAYS AND ARRAYBUFFER
+--------------------------------------------
+
+a.trimEnd(2)  //removes last 2 elements
+a.insert(2,9) // adds elements at 2nd index
+a.insert(2,10,11,12) // adds a list
+a.remove(2) // removes an element
+a.removes(2,3) //removes three elements from index 2
+
+arr.sum
+arr.max
+arr.min
+
+COLLECTIONS: MAPS
+-------------------------
+val mapping = Map("Vishal" -> "kumar" , "Vijay" -> "Verma") -- immutable map
+
+to create muttable map
+val mapping =scala.collection.mutable.Map("Vishal") ->"K", "Vijay" -> "V")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
