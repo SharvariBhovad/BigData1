@@ -1,0 +1,208 @@
+>>> woking on sample.txt data file <<<
+
+1.TO LOGIN 
+--------
+spark-shell
+
+2. CONVERT TEXT TO LOWER CASE
+-----------------------------
+	a.loading data from local directory
+	--------------------------------
+	val inputfile = sc.textFile("sample.txt"); -- base RDD
+	--here val defines fixed value(cannot be modified)
+
+	a.loading data from hdfs
+	-----------------------
+	val inputfile = sc.textFile("hdfs://localhost:54310/intel/file1");
+	
+	b. converting to lower
+	-----------------------
+	val lower = inputfile.map( a=> a.toLowerCase());
+
+	C. print information
+	---------------------
+	lower.foreach(println);
+
+3. CONVERT TEXT TO UPPER CASE
+-----------------------------
+
+	a. converting to upper
+	-----------------------
+	val upper = inputfile.map( a=> a.toUpperCase());
+
+	A map transformation is useful when we need to transform a RDD by applying a function to each element.
+
+	b. print information
+	---------------------
+	upper.foreach(println);
+
+	============
+	output
+	=================
+	scala> upper.foreach(println);
+	SHARVARI,MUMBAI,22
+	JUI,GOA,18
+
+
+4. Calculate the length of file
+-------------------------------
+
+	val lines = sc.textFile("/home/hduser/sample.txt");
+
+	val lineslength = lines.map(_.length);
+
+	lineslength.foreach(println);
+
+	OR
+	
+	val linelength = inputfile.map(s => s.length);
+	
+	val totallength = lineslength.reduce((a,b) => a+b);
+	println("Total Length for all characters : " + totallength);
+
+	val totallength = lineslength.reduce(_+_);	
+	println("Total Length for all characters : " + totallength);
+
+5. WORD COUNT TUTORIAL
+-----------------------
+
+	val countfile = sc.textFile("/home/hduser/wcount");
+
+	val transform = inputfile.flatMap(line => line.split(" "));
+
+	OR
+
+	val transform = inputfile.flatMap(_.split(" "));
+
+	transform.foreach(println);
+
+	val keybyword = transform.map(word => (word, 1));
+
+	keybyword.foreach(println);
+
+	val counts = keybyword.reduceByKey(_+_).sortByKey();
+
+	OR
+	
+	val counts = keybyword.reduceByKey((a,b) => a+b).sortByKey();
+
+	//asc  
+	val sortbyval = counts.collect.sortBy(_._2);  -- gives array 
+
+	//desc
+	val sortbyval = counts.collect.sortBy(-_._2); -- gives array
+
+
+	sortbyval.foreach(println);
+
+	counts.foreach(println);
+
+	//storing an RDD in an output file
+
+	counts.saveAsTextFile("hdfs://localhost:54310/intel/spark1");
+
+	//storing an array in an output file
+
+	sc.parallelize(sortbyval).saveAsTextFile("hdfs://localhost:54310/intel/spark2");
+
+
+6. Returns the count of records
+-------------------------------
+	val custRDD = sc.textFile("/home/hduser/custs.txt");
+	custRDD.count();
+
+	val txnRDD = sc.textFile("/home/hduser/txns1.txt");
+	txnRDD.count();
+
+7.Mapping customer table to Profession usint cust.txt record
+ => SQL counting the number of customers per profession;(sort on value)
+ and find top ten professions on count.
+------------------------------------------------
+	val custRDD = sc.textFile("/home/hduser/custs.txt")
+	val professionRDD = custRDD.map(x => (x.split(",")(4), 1))   -- here 4th record is of profession .. 1 will be added to every word
+	val professioncounts = professionRDD.reduceByKey(_+_).sortByKey();
+	professioncounts.foreach(println);
+	val sortbyval = professioncounts.collect.sortBy(-_._2);      -- sort by desc
+	val top10prof = sortbyval.take(10);
+
+8.calculating total amount spent by each customer and find top ten buyers
+-------------------------------------------------
+	val txnRDD = sc.textFile("/home/hduser/txns1.txt")
+	val custRDD = txnRDD.map(x => (x.split(",")(2), x.split(",")(3).toDouble ))
+	custRDD.foreach(println);
+	val custTotalSpent = custRDD.reduceByKey((a,b) => a+b).sortByKey();
+	custTotalSpent.foreach(println);
+	val sortbyval = custTotalSpent.collect.sortBy(-_._2);
+	val top10 = sortbyval.take(10);
+	top10.foreach(println);
+
+	val top10RDD =sc.parallelize(top10)
+
+	
+	val custRDD1 = sc.textFile("/home/hduser/custs.txt")
+	val custRDD11 = custRDD1.map(x => (x.split(",")(0), x.split(",")(1)))
+	val joined = top10RDD.leftOuterJoin(custRDD11);
+
+
+9.1 Find out the top 10 viable products 
+------------------------------------------------------------------------------------------------------------------------------------------------
+	val retailRDD = sc.textFile("/home/hduser/Retail_Data")
+
+	val retail = retailRDD.map(line => line.split(";").map(_.trim))
+	
+	val reqDet = retail.map(x=> (x(5),(x(8).toInt - x(7).toInt)))
+
+	val profitforproduct = reqDet.reduceByKey((a,b) => a+b).sortByKey();
+
+	profitforproduct.foreach(println)
+
+	val sortbyval = profitforproduct.collect.sortBy(-_._2);
+
+	val top10 = sortbyval.take(10);
+
+
+9.2 find out the net profit for each product
+----------------------------------------
+
+	val retail = retailRDD.map(line => line.split(";").map(_.trim))
+	
+	val sales = retail.map(x=> (x(5),(x(8).toInt)))
+
+	val totalsales = sales.reduceByKey((a,b) => a+b).sortByKey();
+
+	totalsales.foreach(println);
+
+	val purchase = retail.map(x=> (x(5),(x(7).toInt)))
+
+	val totalpurchase = purchase.reduceByKey((a,b) => a+b).sortByKey();
+
+	totalpurchase.foreach(println);
+
+	val joined = totalsales.fullOuterJoin(totalpurchase).map { case (a, (b, c: Option[Int])) => (a, (b.getOrElse().asInstanceOf[Int], 	(c.getOrElse().asInstanceOf[Int]))) }
+
+	val net = joined.map(pair => (pair._1, (pair._2._1 - pair._2._2)))
+
+
+
+10. Partitioners
+--------------------
+	import org.apache.spark.HashPartitioner
+	val inputfile = sc.textFile("sample.txt");
+	val transform = inputfile.flatMap(line => line.split(" "));
+	val keybyword = transform.map(word => (word, 1));
+	val myPartition = keybyword.partitionBy(new HashPartitioner(2))
+	val counts = myPartition.reduceByKey((a,b) => a+b).sortByKey();
+	counts.saveAsTextFile("/home/hduser/folder1/part2");
+
+	counts.partitions.size 
+	Int = 2
+
+	import org.apache.spark.RangePartitioner
+	val inputfile = sc.textFile("sample.txt");
+	val transform = inputfile.flatMap(line => line.split(" "));
+	val keybyword = transform.map(word => (word, 1));
+	val myPartition = keybyword.partitionBy(new RangePartitioner(3,keybyword))
+	val counts = myPartition.reduceByKey((a,b) => a+b).sortByKey();
+	counts.saveAsTextFile("/home/hduser/folder2/part4");
+
+
